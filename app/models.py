@@ -16,7 +16,7 @@ def now():
 
 
 # ---- Users -----------------------------------------------------------
-# Every identity in Shelther — from an anonymous browser who just verified
+# Every identity in Shelter — from an anonymous browser who just verified
 # a phone number, up to a fully-verified Agent — is one User row. `role`
 # and `kyc_status` together decide what they're allowed to do, matching
 # the progressive identity model in the spec: browsing is anonymous,

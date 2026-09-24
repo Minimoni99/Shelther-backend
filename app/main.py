@@ -14,7 +14,7 @@ from . import (
 # instead of relying on create_all for schema changes.
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Shelther API")
+app = FastAPI(title="Shelter API")
 
 allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
