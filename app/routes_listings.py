@@ -68,6 +68,8 @@ def create_listing(body: schemas.ListingCreateBody, user: models.User = Depends(
     else:
         if user.role not in ("landlord", "agent"):
             raise HTTPException(status_code=403, detail="Only Landlord or Agent accounts can list Rent or Short-let properties.")
+        if user.kyc_status != "approved":
+            raise HTTPException(status_code=403, detail="Your account isn't verified yet — complete document verification before you can list a property.")
 
     listing = models.Listing(
         type=body.type, owner_id=user.id, title=body.title, description=body.description,

@@ -36,6 +36,10 @@ class User(Base):
     bio = Column(Text, nullable=True)  # roommate mini-profile short bio
 
     # Landlord/Agent professional fields
+    password_hash = Column(String, nullable=True)  # only Landlord/Agent accounts use a password — everyday/light identities stay OTP-only
+    state = Column(String, nullable=True)
+    lga = Column(String, nullable=True)
+    business_name = Column(String, nullable=True)  # Agent accounts only
     payout_nuban = Column(String, nullable=True)
     lasrera_id = Column(String, nullable=True)  # Lagos agents only, optional
 

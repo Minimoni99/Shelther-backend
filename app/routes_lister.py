@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from . import models, schemas
 from .database import get_db
-from .auth import current_user, require_role
+from .auth import current_user, require_role, sign
 import uuid
 import os
 import datetime
+import bcrypt
 
 router = APIRouter(prefix="/api/lister", tags=["lister"])
 
@@ -14,6 +15,58 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_DOC_EXT = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
+
+
+def _safe_lister(u: models.User) -> dict:
+    return {
+        "id": u.id, "name": u.name, "email": u.email, "phone": u.phone, "role": u.role,
+        "state": u.state, "lga": u.lga, "business_name": u.business_name,
+        "profile_photo_url": u.profile_photo_url, "kyc_status": u.kyc_status,
+    }
+
+
+@router.post("/register")
+def register_lister(body: schemas.ListerRegisterBody, db: Session = Depends(get_db)):
+    """Landlord/Agent accounts can be created immediately with no
+    verification — name, state/LGA, business name (Agent only), phone,
+    email, and a password. They can browse their own dashboard right
+    away, but per the spec, listing creation itself stays blocked until
+    kyc_status is 'approved' (enforced in routes_listings.create_listing)."""
+    if body.role not in ("landlord", "agent"):
+        raise HTTPException(status_code=400, detail="role must be landlord or agent.")
+
+    existing = (
+        db.query(models.User)
+        .filter((models.User.email == body.email) | (models.User.phone == body.phone))
+        .first()
+    )
+    if existing:
+        if existing.password_hash:
+            raise HTTPException(status_code=409, detail="An account with that email or phone already exists — sign in instead.")
+        # Upgrade a lightweight browsing identity (no password yet) into a full Landlord/Agent account.
+        user = existing
+    else:
+        user = models.User(email=body.email, phone=body.phone)
+        db.add(user)
+
+    user.role = body.role
+    user.name = body.name
+    user.state = body.state
+    user.lga = body.lga
+    user.business_name = body.business_name if body.role == "agent" else None
+    user.password_hash = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
+    user.kyc_status = "none"
+    db.commit()
+    db.refresh(user)
+    return {"token": sign(user), "user": _safe_lister(user)}
+
+
+@router.post("/login")
+def login_lister(body: schemas.ListerLoginBody, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == body.email).first()
+    if not user or not user.password_hash or not bcrypt.checkpw(body.password.encode(), user.password_hash.encode()):
+        raise HTTPException(status_code=401, detail="Incorrect email or password.")
+    return {"token": sign(user), "user": _safe_lister(user)}
 
 
 @router.post("/become")
@@ -30,6 +83,8 @@ def become_lister(body: schemas.BecomeListerBody, user: models.User = Depends(cu
     user.name = body.name
     user.email = body.email
     user.profile_photo_url = body.profile_photo_url
+    if body.lasrera_id:
+        user.lasrera_id = body.lasrera_id
     user.kyc_status = "none"  # they'll upload documents next
     db.commit()
     db.refresh(user)

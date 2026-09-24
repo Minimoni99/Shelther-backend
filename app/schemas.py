@@ -24,6 +24,23 @@ class BecomeListerBody(BaseModel):
     name: str
     email: str
     profile_photo_url: str  # mandatory for landlord/agent
+    lasrera_id: Optional[str] = None  # Lagos agents only, optional
+
+
+class ListerRegisterBody(BaseModel):
+    role: str  # landlord | agent
+    name: str
+    state: str
+    lga: str
+    business_name: Optional[str] = None  # Agent accounts only
+    phone: str
+    email: str
+    password: str
+
+
+class ListerLoginBody(BaseModel):
+    email: str
+    password: str
 
 
 class ListingCreateBody(BaseModel):
