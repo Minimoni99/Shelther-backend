@@ -36,6 +36,7 @@ def _listing_out(l: models.Listing, db: Session) -> dict:
         "caution_fee": float(l.caution_fee) if l.caution_fee else None,
         "service_charge": float(l.service_charge) if l.service_charge else None,
         "agency_fee": float(l.agency_fee) if l.agency_fee else None,
+        "legal_fee": float(l.legal_fee) if l.legal_fee else None,
         "nightly_rate": float(l.nightly_rate) if l.nightly_rate else None,
         "total_rent": float(l.total_rent) if l.total_rent else None,
         "roommate_share": float(l.roommate_share) if l.roommate_share else None,
@@ -75,7 +76,7 @@ def create_listing(body: schemas.ListingCreateBody, user: models.User = Depends(
         type=body.type, owner_id=user.id, title=body.title, description=body.description,
         state=body.state, lga=body.lga, beds=body.beds, baths=body.baths, amenities=body.amenities,
         annual_rent=body.annual_rent, caution_fee=body.caution_fee, service_charge=body.service_charge,
-        agency_fee=body.agency_fee, nightly_rate=body.nightly_rate, total_rent=body.total_rent,
+        agency_fee=body.agency_fee, legal_fee=body.legal_fee, nightly_rate=body.nightly_rate, total_rent=body.total_rent,
         roommate_share=body.roommate_share, gender_preference=body.gender_preference,
         house_rules=body.house_rules, available_from=body.available_from, status="pending_review",
     )

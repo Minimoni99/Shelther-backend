@@ -96,6 +96,7 @@ class Listing(Base):
     caution_fee = Column(Numeric, nullable=True)
     service_charge = Column(Numeric, nullable=True)
     agency_fee = Column(Numeric, nullable=True)
+    legal_fee = Column(Numeric, nullable=True)
 
     # Short-let specific
     nightly_rate = Column(Numeric, nullable=True)
@@ -147,9 +148,21 @@ class MeetingRequest(Base):
     id = Column(String, primary_key=True, default=new_id)
     listing_id = Column(String, ForeignKey("listings.id"), nullable=False)
     requester_id = Column(String, ForeignKey("users.id"), nullable=False)
-    proposed_time = Column(DateTime, nullable=True)
-    status = Column(String, nullable=False, default="pending")  # pending | accepted | declined
+
+    requester_name = Column(String, nullable=True)
+    requester_phone = Column(String, nullable=True)
+    description = Column(Text, nullable=True)  # what the requester wants to see/discuss
+
+    # Set by the lister when they approve (they have 48h from created_at, enforced
+    # in the route rather than stored, so it's always computed against "now").
+    meeting_date = Column(DateTime, nullable=True)
+    meeting_location = Column(String, nullable=True)
+    responded_at = Column(DateTime, nullable=True)
+
+    status = Column(String, nullable=False, default="pending")  # pending | approved | declined
     created_at = Column(DateTime, default=now)
+
+    listing = relationship("Listing")
 
 
 class PictureRequest(Base):

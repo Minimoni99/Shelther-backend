@@ -13,10 +13,13 @@ def _price_and_breakdown(listing: models.Listing):
     if listing.type == "rent":
         items = {
             "Annual rent": float(listing.annual_rent or 0),
-            "Caution fee": float(listing.caution_fee or 0),
-            "Service charge": float(listing.service_charge or 0),
-            "Agency fee": float(listing.agency_fee or 0),
+            "Agent fee": float(listing.agency_fee or 0),
+            "Legal fee": float(listing.legal_fee or 0),
         }
+        if listing.caution_fee:
+            items["Caution fee"] = float(listing.caution_fee)
+        if listing.service_charge:
+            items["Service charge"] = float(listing.service_charge)
     elif listing.type == "shortlet":
         items = {"Nightly rate": float(listing.nightly_rate or 0)}
     else:
@@ -35,6 +38,24 @@ def create_transaction(body: schemas.TransactionCreateBody, user: models.User = 
         raise HTTPException(status_code=404, detail="Listing not found or not available.")
     if body.payment_method not in ("card", "bank_transfer"):
         raise HTTPException(status_code=400, detail="payment_method must be card or bank_transfer.")
+
+    # Rent and Roommate require an approved in-person checkout first — Short-let
+    # stays instant-pay since it's typically booked remotely without a viewing.
+    if listing.type in ("rent", "roommate"):
+        approved = (
+            db.query(models.MeetingRequest)
+            .filter(
+                models.MeetingRequest.listing_id == listing.id,
+                models.MeetingRequest.requester_id == user.id,
+                models.MeetingRequest.status == "approved",
+            )
+            .first()
+        )
+        if not approved:
+            raise HTTPException(
+                status_code=403,
+                detail="Complete an in-person checkout with the lister before paying — request a meeting first.",
+            )
 
     amount, breakdown = _price_and_breakdown(listing)
     txn = models.Transaction(

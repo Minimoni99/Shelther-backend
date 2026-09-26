@@ -57,6 +57,7 @@ class ListingCreateBody(BaseModel):
     caution_fee: Optional[float] = None
     service_charge: Optional[float] = None
     agency_fee: Optional[float] = None
+    legal_fee: Optional[float] = None
 
     nightly_rate: Optional[float] = None
 
@@ -73,6 +74,17 @@ class MessageCreateBody(BaseModel):
     listing_id: str
     recipient_id: str
     body: str
+
+
+class MeetingRequestBody(BaseModel):
+    name: str
+    phone: str
+    description: Optional[str] = None
+
+
+class MeetingApproveBody(BaseModel):
+    meeting_date: datetime.datetime
+    meeting_location: str
 
 
 class TransactionCreateBody(BaseModel):
